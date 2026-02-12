@@ -11,7 +11,8 @@ metadata: {
         "bins": ["sqlite3", "git"],
         "config": ["browser.enabled"]
       },
-      "primaryEnv": "VAULT_DIR"
+      "primaryEnv": "VAULT_DIR",
+      "optionalEnv": "CONTENT_FILTER"
     }
   }
 ---
@@ -22,14 +23,42 @@ metadata: {
 This skill converts the user's recent Chrome browser history into a connected
 Obsidian knowledge base, automatically linking new knowledge to existing notes.
 
-## Vault Location
-Use $VAULT_DIR
+## Configuration
+
+### Vault Location
+Use `$VAULT_DIR`
 It can be a local obsidian vault path, or a link to github repository.
 If it is a github repository, clone it in local and change $VAULT_DIR to `<GIT_CLONE_DIR>/content`
 
+### Content Filter (Optional)
+Use `$CONTENT_FILTER` to specify what type of content to extract from web pages.
+
+Examples:
+- `"tech/cs"` - Extract only technical/computer science information
+- `"business"` - Extract business, entrepreneurship, and management content
+- `"science"` - Extract scientific research and academic content
+- `"design"` - Extract design, UX/UI, and creative content
+- `"all"` - Extract all content without filtering (default)
+
+If not set, defaults to `"all"` (no filtering).
+
 ## Pipeline Steps
 
-### 1. Extract Browser History (last hour)
+### 1. Initialize SQLite Database
+Create/verify the tracking database at `$VAULT_DIR/.browsing_history.db`:
+
+```sql
+CREATE TABLE IF NOT EXISTS processed_urls (
+  url TEXT PRIMARY KEY,
+  processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  note_path TEXT
+);
+```
+
+This database replaces the old `.processed_urls` text file and provides better
+tracking of which URLs have been processed and where their notes are stored.
+
+### 2. Extract Browser History (last hour)
 Use `exec` to run a shell command that copies and queries the Chrome
 history SQLite database. Chrome locks the DB while running, so always
 copy it first.
@@ -80,17 +109,40 @@ profile. If the user uses a named profile, it will be under
 `Profile 1`, `Profile 2`, etc. Check `chrome://version` → "Profile Path"
 to confirm.
 
-### 2. Filter Entries
+### 3. Filter Entries
 Ignore these domains: google.com, youtube.com, github.com, localhost,
 chrome://, newtab, extensions, internal pages.
-Also skip any URL already processed (check `$VAULT_DIR/.processed_urls`).
 
-### 3. Fetch Page Content
+Also skip any URL already processed by querying the SQLite database:
+```sql
+SELECT url FROM processed_urls WHERE url = '<URL_TO_CHECK>';
+```
+
+If the query returns a result, skip that URL.
+
+### 4. Fetch Page Content
 For each remaining URL, use `web_fetch` tool to grab readable content.
 Truncate to ~3000 chars. If fetch fails, skip the entry.
 
-### 4. Analyze & Generate Obsidian Note
+### 5. Analyze & Generate Obsidian Note
 For each page, analyze the content and generate a structured note:
+
+**Content Filtering (based on $CONTENT_FILTER):**
+Check the `$CONTENT_FILTER` environment variable to determine filtering behavior:
+
+- If `$CONTENT_FILTER` is set to a specific type (e.g., "tech/cs", "business", "science"):
+  - Analyze the page content and extract ONLY information relevant to that category
+  - Filter out unrelated sections, personal stories, or off-topic content
+  - Focus on key concepts, facts, examples, and actionable information within that domain
+
+- If `$CONTENT_FILTER` is "all" or not set:
+  - Extract all significant content without filtering
+
+**Category-specific focus examples:**
+- `tech/cs`: Code examples, technical concepts, APIs, algorithms, debugging, performance
+- `business`: Strategy, metrics, case studies, frameworks, market insights
+- `science`: Research findings, methodologies, data, theories, experiments
+- `design`: UI/UX patterns, design systems, accessibility, visual principles
 
 **Frontmatter:**
 ```yaml
@@ -99,14 +151,16 @@ title: "Descriptive Title"
 date: <ISO timestamp of visit>
 source: <URL>
 tags: [relevant, tags, here]
+content_type: <value from $CONTENT_FILTER or "general">
 auto_generated: true
 ---
 ```
 
 **Body structure:**
 - `# Title` — clear, descriptive
-- `## Summary` — 2-3 sentence overview of what the user was learning
-- `## Key Takeaways` — the important facts, concepts, code snippets
+- `## Summary` — 2-3 sentence overview of the content (filtered if applicable)
+- `## Key Takeaways` — important facts, concepts, examples
+  (filtered by $CONTENT_FILTER if set)
 - `## Connections` — [[wikilinks]] to related existing notes in the vault
 - `## Source` — link back to original URL
 
@@ -115,19 +169,25 @@ Before generating, scan existing .md files in `$VAULT_DIR` to find
 related notes. Use `[[Note Name]]` wikilink syntax for connections.
 Be generous with links — the goal is a densely connected knowledge graph.
 
-### 5. Write Notes
-Save each note to `$VAULT_DIR/auto/YYYY-MM/<Title>.md`.
+### 6. Write Notes
+Save each note to `$VAULT_DIR/<ContentType>/<Title>.md`.
 Create directories as needed.
 
 Also append backlinks to related existing notes if they don't already
 reference the new note. Add a line like:
 `- Auto-linked: [[new-note-name]]`
 
-### 6. Update Processed URLs
-Append each processed URL to `$VAULT_DIR/.processed_urls` (one per line)
-to avoid reprocessing.
+### 7. Update Processed URLs Database
+For each successfully processed URL, insert it into the SQLite database:
 
-### 7. Git Commit & Push
+```sql
+INSERT INTO processed_urls (url, note_path)
+VALUES ('<URL>', '<path/to/generated/note.md>');
+```
+
+This tracks both the URL and the location of the generated note for future reference.
+
+### 8. Git Commit & Push
 If you are working in git repo, you have to apply changes to the remote repository
 ```bash
 cd ~/sub-brain
