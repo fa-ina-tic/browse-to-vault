@@ -120,31 +120,32 @@ SELECT url FROM processed_urls WHERE url = '<URL_TO_CHECK>';
 
 If the query returns a result, skip that URL.
 
-### 4. Fetch Page Content
-For each remaining URL, use `web_fetch` tool to grab readable content.
-Truncate to ~3000 chars. If fetch fails, skip the entry.
+### 4. Read Page Content
+Use the built-in web reading capability (WebFetch / web search agent) to read the URL directly — no curl, no HTML parsing, no shell commands needed.
+
+- Ask the agent to extract the full readable text of the page
+- If the page cannot be read or returns no meaningful content, skip the entry
 
 ### 5. Analyze & Generate Obsidian Note
 For each page, analyze the content and generate a structured note:
 
-**Content Filtering (based on $CONTENT_FILTER):**
-Check the `$CONTENT_FILTER` environment variable to determine filtering behavior:
+**Content Filtering (based on `$CONTENT_FILTER`)**
 
-- If `$CONTENT_FILTER` is set to a specific type (e.g., "tech/cs", "business", "science"):
-  - Analyze the page content and extract ONLY information relevant to that category
-  - Filter out unrelated sections, personal stories, or off-topic content
-  - Focus on key concepts, facts, examples, and actionable information within that domain
+- If `$CONTENT_FILTER` is set (e.g. `tech/cs`, `business`, `science`): extract ONLY information relevant to that domain — skip unrelated sections
+- If `$CONTENT_FILTER` is `all` or unset: extract all significant content
 
-- If `$CONTENT_FILTER` is "all" or not set:
-  - Extract all significant content without filtering
+**Focus on extracting skills, insights, and actionable knowledge — not just summaries.**
+Go deep on:
+- Concepts and mental models introduced
+- Techniques, methods, patterns, or workflows explained
+- Key facts, data points, or findings
+- Concrete examples, code snippets, or case studies
+- Opinions or stances the author takes
 
-**Category-specific focus examples:**
-- `tech/cs`: Code examples, technical concepts, APIs, algorithms, debugging, performance
-- `business`: Strategy, metrics, case studies, frameworks, market insights
-- `science`: Research findings, methodologies, data, theories, experiments
-- `design`: UI/UX patterns, design systems, accessibility, visual principles
+Avoid: shallow one-line summaries, restating the title, or paraphrasing the intro paragraph only.
 
-**Frontmatter:**
+**Frontmatter**
+
 ```yaml
 ---
 title: "Descriptive Title"
@@ -156,18 +157,13 @@ auto_generated: true
 ---
 ```
 
-**Body structure:**
-- `# Title` — clear, descriptive
-- `## Summary` — 2-3 sentence overview of the content (filtered if applicable)
-- `## Key Takeaways` — important facts, concepts, examples
-  (filtered by $CONTENT_FILTER if set)
-- `## Connections` — [[wikilinks]] to related existing notes in the vault
-- `## Source` — link back to original URL
+**Body Structure**
 
-**Critical: Linking**
-Before generating, scan existing .md files in `$VAULT_DIR` to find
-related notes. Use `[[Note Name]]` wikilink syntax for connections.
-Be generous with links — the goal is a densely connected knowledge graph.
+- `# Title` — clear, descriptive
+- `## Summary` — 2–3 sentences: what this page is, why it matters
+- `## Key Takeaways` — the actual knowledge: concepts, techniques, insights, examples extracted from the content. Use sub-sections if the content has distinct topics. Be specific and substantive.
+- `## Connections` — `[[wikilinks]]` to **genuinely related** existing notes only. Do not link to every note in the vault — only link if there is a real conceptual or practical relationship. Prefer fewer, stronger links over many weak ones.
+- `## Source` — link back to the original URL
 
 ### 6. Write Notes
 Save each note to `$VAULT_DIR/<ContentType>/<Title>.md`.
@@ -208,6 +204,8 @@ $changes = git diff --cached --quiet; if ($LASTEXITCODE -ne 0) {
 
 ## Important Notes
 - If no new history entries are found, skip silently (no empty commits)
+- Only link to existing notes with a genuine topical overlap. Linking everything to everything dilutes the graph.
+- The goal of each note is to make the knowledge *retrievable and usable*, not just to record that a page was visited. Extract the insight, not the summary.
 - Process max 15 entries per run to avoid excessive API usage
 - Rate-limit: pause ~2 seconds between page analyses
 - If git push fails (network), log the error but don't lose the commits
