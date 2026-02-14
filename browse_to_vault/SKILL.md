@@ -1,5 +1,5 @@
 ---
-name: browsing-to-brain
+name: browse-to-vault
 description: >
   Hourly pipeline that extracts Chrome browser history,
   analyzes visited pages with AI, generates Obsidian-formatted
