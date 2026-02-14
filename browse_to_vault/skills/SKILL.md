@@ -81,6 +81,11 @@ Linux:
 - History DB: `~/.config/google-chrome/Default/History`
 - Temp copy: `/tmp/history_copy`
 
+WSL (Windows Subsystem for Linux):
+- History DB: `/mnt/c/Users/<USERNAME>/AppData/Local/Google/Chrome/User Data/Default/History`
+- Temp copy: `/tmp/history_copy`
+- Note: Chrome runs on the Windows side, so use the `/mnt/c/` path. Detect WSL by checking if `/mnt/c` exists and the Linux path does not.
+
 Windows:
 - History DB: `%LOCALAPPDATA%\Google\Chrome\User Data\Default\History`
   (typically `C:\Users\<USERNAME>\AppData\Local\Google\Chrome\User Data\Default\History`)
