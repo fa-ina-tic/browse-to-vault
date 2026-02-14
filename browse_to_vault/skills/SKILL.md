@@ -44,6 +44,14 @@ If not set, defaults to `"all"` (no filtering).
 
 ## Pipeline Steps
 
+### 0. Validate Environment Variables
+Before starting the pipeline, verify that the required environment variables are set.
+
+- `$VAULT_DIR` — if not set, ask the user to provide the vault path before proceeding.
+- `$CONTENT_FILTER` — if not set, ask the user what content filter they want to use (e.g. `tech/cs`, `business`, `science`, `design`, `all`).
+
+Do **not** proceed with any subsequent steps until both values are provided.
+
 ### 1. Initialize SQLite Database
 Create/verify the tracking database at `$VAULT_DIR/.browsing_history.db`:
 
