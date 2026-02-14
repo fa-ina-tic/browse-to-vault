@@ -1,0 +1,14 @@
+{
+  "name": "browse-to-vault",
+  "owner": {
+    "name": "Soomin Lee"
+  },
+  "plugins": [
+    {
+      "name": "browse-to-vault",
+      "source": "./browse_to_vault",
+      "description": "Claude Skill for creating obsidian note from chrome history",
+      "version": "1.0.0"
+    }
+  ]
+}

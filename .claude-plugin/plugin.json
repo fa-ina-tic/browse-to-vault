@@ -1,0 +1,12 @@
+{
+  "name": "browse-to-vault",
+  "version": "1.0.0",
+  "description": "Claude Skill for creating obsidian note from chrome history",
+  "author": {
+    "name": "Soomin Lee",
+    "email": "sooh0601@gmail.com",
+    "url": "https://github.com/fa-ina-tic"
+  },
+  "repository": "https://github.com/fa-ina-tic/browse-to-vault",
+  "license": "MIT"
+}
