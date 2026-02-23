@@ -170,6 +170,27 @@ auto_generated: true
 ---
 ```
 
+**Tagging Strategy — Typed Namespace Schema**
+
+Tags are the edges of the knowledge graph. Use typed prefixes so graph DB queries can distinguish relationship kinds:
+
+| Prefix | Meaning | Count per note | Examples |
+|--------|---------|----------------|---------|
+| `domain:` | Broad field — for clustering | 1–2 | `domain:ml`, `domain:hardware`, `domain:security`, `domain:mathematics` |
+| `concept:` | Transferable idea — the primary graph bridge | 2–4 | `concept:quantization`, `concept:productivity`, `concept:active-recall` |
+| `method:` | Named technique, algorithm, tool, or workflow | 1–3 | `method:awq`, `method:mcp`, `method:graph-fourier-transform` |
+| `entity:` | Named product, org, person, or paper | 0–3 | `entity:thinkpad`, `entity:claude`, `entity:gemma` |
+| `context:` | Situational filter — geography, industry, era | 0–2 | `context:korea`, `context:enterprise`, `context:mobile` |
+
+**Rules:**
+- Always use kebab-case after the prefix: `method:graph-fourier-transform`, NOT `method:GFT`
+- `concept:` tags are the most important — they create cross-domain bridges (e.g. `concept:productivity` connecting hardware and developer-tools content)
+- `entity:` tags are precise but narrow — keep them to 0–3 per note to avoid diluting the graph
+- Never use bare tags without a prefix — they lose their relationship semantics in graph queries
+- A note about a specific paper or method should tag the *concept* it contributes to, not just the method name (e.g. `method:awq` + `concept:quantization` + `concept:calibration`)
+
+**Good (typed):** `tags: [domain:ml, concept:quantization, concept:calibration, method:awq, method:ptq, context:NeurIPS]`
+
 **Body Structure**
 
 - `# Title` — clear, descriptive
